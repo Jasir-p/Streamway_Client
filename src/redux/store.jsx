@@ -8,6 +8,7 @@ import authrizReducer from "./slice/authrizeSlice";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import  teamsSliceReducer from "./slice/TeamSlice";
+import fieldSliceReducer from "./slice/LeadFormSlice";
 
 
 const persistConfigAuth = {
@@ -39,7 +40,8 @@ const store = configureStore({
     users: userListReducer,
     employesubdomain: persistedEmployee,
     auth: persistedAuth,
-    teams: teamsSliceReducer
+    teams: teamsSliceReducer,
+    fields:fieldSliceReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

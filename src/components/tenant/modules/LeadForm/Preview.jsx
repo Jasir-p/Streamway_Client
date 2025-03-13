@@ -1,96 +1,44 @@
 import { useState } from "react";
 import SettingsLayout from "../../settings/Settings";
+import { X } from "lucide-react";
 
 
 const PreviewForm = ({ 
-    tenantConfig = {}, 
+    formConfig = {}, 
     onSubmit, 
     formTitle = "Tenant Form",
     isPreview = false
   }) => {
   
     const requiredFields = [
-      { id: 'name', label: 'Full Name', type: 'text', required: true },
-      { id: 'email', label: 'Email Address', type: 'email', required: true },
-      { id: 'contact', label: 'Contact Number', type: 'tel', required: true },
-      { id: 'location', label: 'Location', type: 'text', required: true },
+      { id: 'name', field_name: 'Full Name', field_type: 'text', is_required: true },
+      { id: 'email', field_name: 'Email Address', field_type: 'email', is_required: true },
+      { id: 'contact', field_name: 'Contact Number', field_type: 'tel', is_required: true },
+      { id: 'location', field_name: 'Location', field_type: 'text', is_required: true },
     ];
   
-  
-    const allFields = [...requiredFields, ...(tenantConfig.customFields || [])];
+    console.log(formConfig.field)
+    const allFields = [
+      ...requiredFields, 
+      ...(Array.isArray(formConfig.field) ? formConfig.field : [])
+    ];
   
     const [formValues, setFormValues] = useState({});
     const [errors, setErrors] = useState({});
   
   
     const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormValues({
-        ...formValues,
-        [name]: value
-      });
-      
-      // Clear error when field is edited
-      if (errors[name]) {
-        setErrors({
-          ...errors,
-          [name]: ''
-        });
-      }
+      const { name, value, type, checked } = e.target;
+      setFormValues((prevValues) => ({
+        ...prevValues,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
     };
   
-    // Form validation
-    const validateForm = () => {
-      if (isPreview) return true; // Skip validation in preview mode
-      
-      const newErrors = {};
-      let isValid = true;
-  
-      allFields.forEach(field => {
-        if (field.required && !formValues[field.id]) {
-          newErrors[field.id] = `${field.label} is required`;
-          isValid = false;
-        }
-        
-        // Email validation
-        if (field.type === 'email' && formValues[field.id]) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(formValues[field.id])) {
-            newErrors[field.id] = 'Please enter a valid email address';
-            isValid = false;
-          }
-        }
-        
-        // Phone validation
-        if (field.type === 'tel' && formValues[field.id]) {
-          const phoneRegex = /^\+?[0-9\s\-\(\)]{8,20}$/;
-          if (!phoneRegex.test(formValues[field.id])) {
-            newErrors[field.id] = 'Please enter a valid phone number';
-            isValid = false;
-          }
-        }
-      });
-  
-      setErrors(newErrors);
-      return isValid;
-    };
-  
-    // Handle form submission
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      
-      if (validateForm()) {
-        onSubmit(formValues);
-        // Reset form after submission if needed
-        // setFormValues({});
-      }
-    };
-  
-    // Render different field types
     const renderField = (field) => {
-      const { id, label, type, required, options, placeholder = '' } = field;
-      
-      switch (type) {
+      const { id, field_name, field_type, is_required, options, placeholder = '' } = field;
+  
+      switch (field_type) {
         case 'select':
           return (
             <select
@@ -98,48 +46,19 @@ const PreviewForm = ({
               name={id}
               value={formValues[id] || ''}
               onChange={handleChange}
-              className={`w-full rounded-md border ${errors[id] ? 'border-red-500' : 'border-gray-300'} px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              required={required}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required={is_required}
               disabled={isPreview}
             >
-              <option value="">Select {label}</option>
-              {options && options.map(option => (
+              <option value="">Select {field_name}</option>
+              {field.options?.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
           );
-        
-        case 'textarea':
-          return (
-            <textarea
-              id={id}
-              name={id}
-              value={formValues[id] || ''}
-              onChange={handleChange}
-              placeholder={isPreview ? `Example ${label.toLowerCase()}` : placeholder}
-              rows={4}
-              className={`w-full rounded-md border ${errors[id] ? 'border-red-500' : 'border-gray-300'} px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              required={required}
-              disabled={isPreview}
-            />
-          );
-        
-        case 'date':
-          return (
-            <input
-              type="date"
-              id={id}
-              name={id}
-              value={formValues[id] || ''}
-              onChange={handleChange}
-              className={`w-full rounded-md border ${errors[id] ? 'border-red-500' : 'border-gray-300'} px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              required={required}
-              disabled={isPreview}
-            />
-          );
-          
+  
         case 'checkbox':
           return (
             <div className="flex items-center">
@@ -148,84 +67,62 @@ const PreviewForm = ({
                 id={id}
                 name={id}
                 checked={formValues[id] || false}
-                onChange={(e) => handleChange({
-                  target: {
-                    name: id,
-                    value: e.target.checked
-                  }
-                })}
+                onChange={(e) => handleChange({ target: { name: id, value: e.target.checked } })}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 disabled={isPreview}
               />
               <label htmlFor={id} className="ml-2 text-sm text-gray-700">
-                {label}
+                {field_name}
               </label>
             </div>
           );
-        
+  
         default:
           return (
             <input
-              type={type}
+              type={field_type}
               id={id}
               name={id}
               value={formValues[id] || ''}
               onChange={handleChange}
-              placeholder={isPreview ? `Example ${label.toLowerCase()}` : placeholder}
-              className={`w-full rounded-md border ${errors[id] ? 'border-red-500' : 'border-gray-300'} px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              required={required}
+              placeholder={isPreview ? `Example ${field_name.toLowerCase()}` : placeholder}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required={is_required}
               disabled={isPreview}
             />
           );
       }
     };
   
-    // Form appearance customization based on tenant config
-    const formStyle = tenantConfig.formStyle || {};
-    const buttonStyle = tenantConfig.buttonStyle || {};
-  
     return (
-        
-      <div className={`bg-white rounded-lg shadow-md p-6 mx-auto max-w-2xl ${formStyle.containerClass || ''}`}>
-        <h2 className="text-xl font-semibold mb-6 text-center text-gray-800">{formTitle}</h2>
-        
-        {isPreview && (
-          <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700 text-center">
-            This is a preview. Fields are disabled.
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="max-w-lg mx-auto p-6 bg-white rounded-md shadow-md">
+        <h2 className="text-lg font-semibold mb-4">{formTitle}</h2>
+        <form>
           {allFields.map((field) => (
-            <div key={field.id} className="space-y-1">
-              {field.type !== 'checkbox' && (
-                <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </label>
-              )}
-              
+            <div key={field.id} className="mb-4">
+              <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+                {field.field_name}
+              </label>
               {renderField(field)}
               
-              {errors[field.id] && (
-                <p className="text-red-500 text-xs mt-1">{errors[field.id]}</p>
-              )}
             </div>
+
           ))}
   
-          <div className="pt-4">
+          {!isPreview ? (
             <button
               type="submit"
-              className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${buttonStyle.class || ''}`}
-              style={buttonStyle.style}
-              disabled={isPreview}
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
             >
-              {buttonStyle.text || "Submit"}
+              Submit
             </button>
-          </div>
+          ) : (
+            <p className="text-gray-500 text-sm text-center">Preview Mode</p>
+          )}
         </form>
       </div>
-      
     );
   };
-
-  export default PreviewForm
+  
+  export default PreviewForm;
+  

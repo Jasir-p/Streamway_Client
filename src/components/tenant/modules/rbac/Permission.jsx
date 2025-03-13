@@ -60,10 +60,11 @@ const roleAcessDelete = async (role, perm_id) => {
 export default function PermissionsTable({ permission, role_id }) {
   const dispatch = useDispatch();
   const { permissions } = useSelector((state) => state.permission);
+  const [change,setChnage] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPermission());
-  }, [dispatch]);
+  }, [dispatch, change]);
 
   const rolebased = useMemo(() => {
     if (!permission) return {};
@@ -126,8 +127,10 @@ export default function PermissionsTable({ permission, role_id }) {
       const newStatus = !prev[module][permission];
       if (newStatus) {
         roleAcess(role_id, perm_id);
+        setChnage(true)
       } else {
         roleAcessDelete(role_id, perm_id);
+        setChnage(true)
       }
       return {
         ...prev,
